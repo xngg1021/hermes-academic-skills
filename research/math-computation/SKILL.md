@@ -1,7 +1,7 @@
 ---
 name: math-computation
-description: "全领域计算中枢:数学、金融、社科、生物医学、物理工程计算与两层自动路由。"
-version: 1.2.0
+description: "全领域计算中枢:数学、金融、社科、生物医学、物理工程计算与两层自动路由."
+version: 1.2.1
 author: SJF, Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
@@ -13,11 +13,11 @@ metadata:
 
 # 数理计算 Skill
 
-符号计算（sympy）、数值计算（numpy/scipy）、高精度（mpmath）、统计建模（statsmodels/scikit-learn）、数据分析（pandas）、图论（networkx）、自动微分（torch）、科学绘图（matplotlib）、生存分析（lifelines）、波动率建模（arch）、心理测量（pingouin）的统一入口。所有库已装在 Hermes venv 的 python 里（`terminal` 的 python 即此 venv）。
+符号计算（sympy）、数值计算（numpy/scipy）、高精度（mpmath）、统计建模（statsmodels/scikit-learn）、数据分析（pandas）、图论（networkx）、自动微分（torch）、科学绘图（matplotlib）、生存分析（lifelines）、波动率建模（arch）、心理测量（pingouin）的统一入口。依赖按任务安装；`terminal` 与 `execute_code` 的解释器/后端可能不同，先打印 `sys.executable` 并核查所需包。
 
 跨学科计算走"领域自动路由"：先识别领域（金融/社科/生物医学/物理工程/纯数统计），再映射任务类型到具体算法与库，领域配方在 `references/domain-recipes-*.md`。各学科共用的底层因子（优化、统计推断、蒙特卡洛、微分方程、时间序列）即"最大公约数"，一次学会全部学科复用。
 
-不做：机器学习训练调参（去 `huggingface-hub`/`llama-cpp` skill）、数学动画视频（去 `manim-video` skill）、硬件跑分（去 `pc-hardware-benchmark` skill）。
+不做：机器学习训练调参（按任务查找专用训练工具；`huggingface-hub`/`llama-cpp` 是可选的模型管理/推理相关技能）、数学动画视频（去 `manim-video` skill）、硬件跑分（使用另行安装并核实的专用工具）。
 
 ## When to Use
 
@@ -34,22 +34,13 @@ Don't use for: 纯算术四则运算（直接算）、需要联网查数据（�
 
 ## Prerequisites
 
-全部已装并验证（2026-09 复验；其中 statsmodels 与 matplotlib 曾因 Hermes venv 重建丢失，已用 `uv pip install --python venv/Scripts/python.exe statsmodels matplotlib` 装回）：
+Python 3.11+；数值配方要求 NumPy、SciPy >=1.9（含 MILP）。其余按任务检查 pandas、sympy、mpmath、statsmodels、scikit-learn >=0.24（含旋转）、matplotlib、networkx、torch、lifelines、arch、pingouin。Excel .xlsx 读取另需 openpyxl，.xls 另需 xlrd。
 
-```
-sympy 1.14.0      numpy 2.4.3       scipy 1.17.1      mpmath 1.3.0
-pandas 2.3.3      statsmodels 0.14.6   scikit-learn 1.9.0
-matplotlib 3.11.1   networkx 3.6.1   torch 2.13.0+cpu
-lifelines 0.30.3   arch 8.0.0        pingouin 0.6.1
-```
-
-pandas 当前为 2.3.3（2026-09 装 lifelines 生态时由 3.0.5 依赖降级，两版差异见 Pitfalls 9）。
-
-无需任何 API key、无需联网。未装的库（jax/cvxpy/pymc/polars 等）不要声称可用；确需时用 `uv pip install --python C:/Users/xngg1/AppData/Local/hermes/hermes-agent/venv/Scripts/python.exe <包名>` 装后先 `import` 验证再使用。
+不假定 Hermes 预装这些库。用所选解释器执行 `python -c "import sys; print(sys.executable)"`；安装时用该解释器的 `-m pip install <package>`，或 `uv pip install --python <venv-python> <package>`。占位符须换成已确认的解释器，不把作者本机版本当成锁定环境。离线计算本身不需 API key；首次安装依赖可能需联网。
 
 ## 执行方式
 
-统一用 `execute_code`（内置 `terminal` 只回显 stdout）或 `terminal` 跑一段 Python。多步计算建议 `execute_code` 写成一个脚本一次跑完，把中间量、图、结果一起打印。
+使用会话实际暴露的 `terminal` 运行 Python 脚本；`execute_code` 可编排工具调用或在其解释器有依赖时直接计算。不要假定两个环境共享包。打印中间量、单位和结果；检查退出码与 stderr。
 
 出图必须无头运行：**先 `import matplotlib; matplotlib.use('Agg')` 再 import pyplot，最后 `fig.savefig(path)` 存文件**，不要 `plt.show()`（无 GUI 会卡住/报错）。中文标签需先设字体（见 Pitfalls）。
 
@@ -94,6 +85,7 @@ pandas 当前为 2.3.3（2026-09 装 lifelines 生态时由 3.0.5 依赖降级�
 ### 符号计算 sympy
 
 ```python
+# fragment: API reference; supply the named input variables and required imports.
 import sympy as sp
 x, y = sp.symbols('x y')
 sp.diff(x**3 + sp.sin(x), x)          # 求导
@@ -107,7 +99,7 @@ sp.factor(x**3 - 1)                    # 因式分解
 sp.Matrix([[1,2],[3,4]]).eigenvals()   # 特征值
 sp.series(sp.exp(x), x, 0, 5)          # 泰勒展开
 sp.latex(sp.Integral(sp.exp(x), x))    # 输出 LaTeX 字符串
-expr.evalf(30)                         # 任意精度求数值（30位）
+sp.sqrt(2).evalf(30)                         # 任意精度求数值（30位）
 sp.nsolve(sp.cos(x)-x, x, 0.7)         # 数值求根（无解析解时）
 f = sp.lambdify(x, x**2 + 1, 'numpy')  # 符号表达式 → numpy 函数（向量化求值/绘图）
 ```
@@ -117,6 +109,7 @@ f = sp.lambdify(x, x**2 + 1, 'numpy')  # 符号表达式 → numpy 函数（向�
 ### 数值计算 scipy/numpy
 
 ```python
+# fragment: API reference; supply the named input variables and required imports.
 import numpy as np
 from scipy import integrate, optimize, linalg, fft, interpolate
 from scipy.integrate import solve_ivp, solve_bvp
@@ -128,23 +121,24 @@ optimize.minimize(f, x0, constraints=cons)       # 约束优化（cons 用 Linea
 optimize.curve_fit(f, xdata, ydata, p0)          # 非线性曲线拟合
 optimize.linprog(c, A_ub, b_ub)                  # 线性规划（标准形式，无需额外库）
 np.linalg.solve(A, b)                            # 线性方程组（良态矩阵）
-np.linalg.lstsq(A, b, rcond=None)                # 最小二乘解（病态/超定用这个）
-np.linalg.cond(A)                                # 条件数（>1e8 视为病态，换 lstsq）
+np.linalg.lstsq(A, b, rcond=None)                # 最小二乘；检查秩与奇异值，病态时仍可能不稳定
+np.linalg.cond(A)                                # 条件数；结合精度/缩放判断，lstsq 不会消除病态
 linalg.eigh(A)                                   # 对称矩阵特征值/特征向量
 fft.fft(signal)                                  # 快速傅里叶变换
 solve_ivp(f, [t0, t1], y0)                       # ODE 初值问题
 solve_bvp(f, bc, x, y)                           # ODE 边值问题（配方见 references）
-interpolate.interp1d(x, y, kind='cubic')         # 插值
+interpolate.CubicSpline(x, y)         # 插值
 np.gradient(f, x)                                # 数值微分（有限差分）
 rng = np.random.default_rng(42)                  # 随机数（新 API，见 Pitfalls 8）
 rng.normal(0, 1, size=1000)                      # 抽样
 ```
 
-拟合/优化失败先换初值 `p0`/`x0`，再换 method（`method='Nelder-Mead'` 最稳）。
+优化先检查 `result.success`、约束残差和目标值；失败时检查缩放、导数与初值。Nelder-Mead 是无梯度局部方法，不保证最稳或全局最优，也不支持通用约束。拟合同时检查警告与协方差有限性。
 
 ### 高精度 mpmath
 
 ```python
+# fragment: API reference; supply the named input variables and required imports.
 from mpmath import mp
 mp.dps = 50                 # 50 位精度
 mp.pi, mp.e                 # 高精度常数
@@ -155,12 +149,13 @@ mp.quad(lambda x: mp.exp(-x**2), [-mp.inf, mp.inf])
 ### 统计 statsmodels + scipy.stats
 
 ```python
+# fragment: API reference; supply the named input variables and required imports.
 import statsmodels.api as sm
 from scipy import stats
 import numpy as np
 
 stats.describe(data)                              # 描述统计
-stats.ttest_ind(a, b)                             # 两独立样本 t 检验
+stats.ttest_ind(a, b, equal_var=False)                             # Welch 独立样本 t 检验，不假定等方差
 stats.ttest_rel(a, b)                             # 配对 t 检验
 stats.chi2_contingency(table)                     # 卡方独立性
 stats.f_oneway(g1, g2, g3)                        # 单因素 ANOVA
@@ -170,7 +165,7 @@ stats.shapiro(data)                               # 正态性检验
 
 X = sm.add_constant(x)                            # 加截距项
 sm.OLS(y, X).fit().summary()                      # 线性回归（看 p 值/R²）
-sm.WLS(y, X, weights=w).fit()                     # 加权回归（异方差时）
+sm.WLS(y, X, weights=w).fit()                     # 权重为误差方差的倒数，须有依据
 sm.RLM(y, X).fit().summary()                      # 稳健回归（有离群点时）
 sm.Logit(y_bin, X).fit().summary()                # 逻辑回归
 sm.tsa.stattools.adfuller(series)                 # 时间序列平稳性检验
@@ -182,6 +177,7 @@ sm.stats.TTestIndPower().solve_power(effect_size, nobs1=None, alpha=0.05, power=
 ### 自动微分 torch
 
 ```python
+# fragment: API reference; supply the named input variables and required imports.
 import torch
 x = torch.tensor(2.0, requires_grad=True)
 y = x**3 + torch.sin(x)
@@ -195,10 +191,26 @@ print(x.grad)                     # 12 + cos(2)
 
 ```python
 import pandas as pd
-df = pd.read_csv(path) / pd.read_excel(path)
-df.groupby('col').agg(['mean','std','count'])
+# smoke-test: true
+# fixture: 教学临时 CSV；真实任务改为用户 path。
+import tempfile
+from pathlib import Path
+_tmp = tempfile.TemporaryDirectory()
+path = Path(_tmp.name) / 'table.csv'
+pd.DataFrame({'col': ['g', 'g'], 'v': [1., 3.], 'a': ['a', 'a'], 'b': ['b', 'b']}).to_csv(path, index=False)
+from pathlib import Path
+path = Path(path).expanduser()
+if path.suffix.lower() == '.csv':
+    df = pd.read_csv(path)
+elif path.suffix.lower() in {'.xlsx', '.xls'}:
+    df = pd.read_excel(path)
+else:
+    raise ValueError(f'Unsupported table format: {path.suffix}')
+df.groupby('col')['v'].agg(['mean','std','count'])
 df.pivot_table(values='v', index='a', columns='b')
 df.describe()          # 快速概览
+assert df['v'].sum() == 4.
+_tmp.cleanup()
 ```
 
 pandas 3.0 的 copy-on-write 与字符串 dtype 变化见 Pitfalls 9。
@@ -206,6 +218,7 @@ pandas 3.0 的 copy-on-write 与字符串 dtype 变化见 Pitfalls 9。
 ### 图论 networkx
 
 ```python
+# fragment: API reference; supply the named input variables and required imports.
 import networkx as nx
 G = nx.Graph(); G.add_edges_from([(1,2),(2,3),(1,3)])
 nx.shortest_path(G, 1, 3)          # 最短路
@@ -217,20 +230,28 @@ nx.maximum_flow(DiG, s, t)         # 最大流（有向图）
 ### 绘图 matplotlib（无头）
 
 ```python
+# smoke-test: true
 import matplotlib
 matplotlib.use('Agg')              # 必须最先，无 GUI 后端
 import matplotlib.pyplot as plt
+import numpy as np
 
-plt.rcParams['font.sans-serif'] = ['Microsoft YaHei']   # 中文（见 Pitfalls）
+# 中文标签需先核实已安装字体（见 Pitfalls），不假定系统自带中文字体。
 plt.rcParams['axes.unicode_minus'] = False
 
 x = np.linspace(-5, 5, 200)
 fig, axes = plt.subplots(1, 2, figsize=(10, 4))
 axes[0].plot(x, np.sin(x), label='sin')
-axes[1].scatter(x, x + np.random.randn(200)*0.5, s=6, alpha=0.6)
-axes[0].legend(); axes[1].set_title('散点')
-fig.savefig('~/plots/plot.png', dpi=120, bbox_inches='tight')
-print('saved: ~/plots/plot.png')
+axes[1].scatter(x, x + np.random.default_rng(42).normal(0, 0.5, 200), s=6, alpha=0.6)
+axes[0].legend(); axes[1].set_title('Scatter')
+from pathlib import Path
+import os
+path = Path(os.environ.get('PLOT_DIR', '~/plots')).expanduser() / 'plot.png'
+path.parent.mkdir(parents=True, exist_ok=True)
+fig.savefig(path, dpi=120, bbox_inches='tight')
+assert path.is_file() and path.stat().st_size > 0
+plt.close(fig)
+print(f'saved: {path.resolve()}')
 ```
 
 3D 用 `fig = plt.figure(); ax = fig.add_subplot(111, projection='3d')`。热力图用 `plt.imshow` + `plt.colorbar()`。
@@ -249,17 +270,18 @@ print('saved: ~/plots/plot.png')
 1. **matplotlib 无头**：CLI 环境没有 GUI，`plt.show()` 会卡住或报错。必须 `matplotlib.use('Agg')` + `savefig`。这个错误最常见。
 2. **中文乱码**：默认字体不含中文，标签会变方块。先 `plt.rcParams['font.sans-serif']=['Microsoft YaHei']`（Windows 已内置）；Linux/macOS 用 `['SimHei']` 或系统可用字体，查字体用 `matplotlib.font_manager.fontManager.ttflist`。
 3. **sympy 结果转数值**：`solve` 返回符号对象，直接打印是 `x = -sqrt(5)+1` 之类，用户可能要数值——用 `float(expr)` 或 `expr.evalf()`。`nsolve` 需要初值，多解时用多个初值扫描，防漏根。
-4. **scipy 优化/拟合不收敛**：先换初值，再换 `method='Nelder-Mead'`（不依赖梯度），必要时 `bounds=` 约束。
+4. **scipy 优化/拟合不收敛**：检查尺度、初值、导数及算法是否支持所需约束；失败结果不能当作有效解。
 5. **符号积分积不出**：sympy 积不出不代表无解，立刻转 `integrate.quad` 数值积分，不要卡在符号路径。
 6. **`summary()` 太啰嗦**：statsmodels 的 summary 输出几十行，直接回给用户会被淹没，先提取系数表/关键统计量。
 7. **包名陷阱**：scikit-learn 的 import 名是 `sklearn`（不是 `scikit-learn`）；opencv 是 `cv2`；检查是否安装用 `importlib.util.find_spec('sklearn')`，别拿 pip 包名做 `find_spec`。
 8. **随机数必须用新 API**：numpy 2.x 里 `np.random.seed()` 是全局旧 API，同一会话多个任务会互相污染。用 `rng = np.random.default_rng(seed)` 后调 `rng.normal(...)` 等方法。numpy 2.x 还移除了 `np.NaN`/`np.float_` 等旧别名，一律写 `np.nan`/`float`。
-9. **pandas 版本注意**：当前环境为 2.3.3（装 lifelines 生态后从 3.0.5 依赖降级）。2.3 下链式赋值仍有 SettingWithCopyWarning 风险，统一用 `loc` 一步到位；若未来升级回 3.x，copy-on-write 默认开启、字符串 dtype 变化，升级后先跑 Verification 自检再继续。
-10. **statsmodels/matplotlib 可能被 venv 重建清掉**：遇到 `ModuleNotFoundError` 先按 Prerequisites 的 uv 命令装回，再继续。这是 2026-09 实测踩过的坑。
+9. **pandas 版本注意**：统一用 `loc` 一步赋值，避免链式赋值；3.x 默认 copy-on-write，字符串 dtype 也有变化。升级依赖后重跑自检。
+10. **环境变化**：遇到 ModuleNotFoundError 先确认当前解释器和任务所需依赖，不推断用户机器曾安装哪些包。
 
 ## Verification
 
 ```python
+# smoke-test: true
 import sympy as sp, numpy as np, tempfile, os
 from scipy.integrate import quad
 import statsmodels.api as sm
@@ -271,7 +293,7 @@ import lifelines, arch, pingouin
 x = sp.symbols('x')
 assert str(sp.diff(x**3, x)) == '3*x**2'          # 符号求导
 assert abs(quad(lambda t: t**2, 0, 1)[0] - 1/3) < 1e-9   # 数值积分
-assert sm.OLS.__name__ == 'OLS'                    # 统计回归
+assert np.allclose(sm.OLS([1., 3., 5., 7.], sm.add_constant([0., 1., 2., 3.])).fit().params, [1., 2.])                    # 统计回归
 rng = np.random.default_rng(0)                     # numpy 新 API
 assert abs(rng.normal(0, 1, 100).mean()) < 0.5
 assert pd.DataFrame({'a': [1, 2]}).a.sum() == 3    # pandas
@@ -282,5 +304,6 @@ t = torch.tensor(2.0, requires_grad=True)          # torch 自动微分
 assert abs(t.grad.item() - 4.0) < 1e-6
 p = os.path.join(tempfile.gettempdir(), '_v.png')
 fig, ax = plt.subplots(); ax.plot([0, 1], [0, 1]); fig.savefig(p); os.remove(p)  # 出图
-print('math-computation 全部自检通过')
+plt.close(fig)
+print('math-computation Verification passed (basic invariants; not every recipe)')
 ```
