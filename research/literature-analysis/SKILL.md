@@ -80,8 +80,8 @@ def overlap_ratio(a, b):
 两层方法，顺序执行：
 
 1. **引用池甄别**（主路径）：拿目标论文的全部引用者作为候选池：
-   `GET https://api.openalex.org/works?filter=cites:<OpenAlex-WID>&per-page=25&select=id,title,abstract_inverted_index,publication_year`
-   摘要用 `abstract_inverted_index` 重建后，由模型逐篇判断引用性质（支持/中立/批评/无法复现），只保留批评与无法复现类。
+   `GET https://api.openalex.org/works?filter=cites:<OpenAlex-WID>&per-page=25&select=id,title,abstract_inverted_index,publication_year,doi`
+   摘要三层兜底（实测 OpenAlex 摘要缺失率高，2026-09 抽测 3 篇全缺）：第一层 `abstract_inverted_index` 重建；第二层缺失时查 Crossref `works/{DOI}` 的 `message.abstract`；第三层仍缺则基于标题判断，或下 OA 全文（工作流 A）再判断。兜底后由模型逐篇判断引用性质（支持/中立/批评/无法复现），只保留批评与无法复现类，并标注每篇的判断依据（摘要/标题/全文）。
 2. **否定词搜索**（辅助）：用否定句式搜同主题论文：
    `search=fail to replicate <主题>`、`search=challenges <主题> findings`、`search=<主题> irreproducible`
    这类召回偏调查综述，需要从命中里人工筛选真正构成反证的研究。
@@ -142,7 +142,7 @@ def overlap_ratio(a, b):
 1. **OpenAlex 请求格式**：API 域名是 `api.openalex.org`；work 实体 id（`https://openalex.org/W...`）只能当 id 用，直接请求会 403。filter 值用 id 尾段（如 `cites:W2919115771`、`author.id:A5023888391`）。
 2. **Semantic Scholar 无 key 本环境实测不可用**（连续 429）。引用上下文反证只作为"有 key 时"的高级选项，无 key 不要依赖它。
 3. **查重的诚实边界**：本地比对只能覆盖你下载到全文的候选集合，不能声称全网查重。报告里必须写明覆盖范围。
-4. **反证召回有限**：citing works 的摘要不是全部可重建（`abstract_inverted_index` 可能缺失），付费墙论文的批评内容可能看不到。报"未发现反证"时措辞为"在可获取的 N 篇引用文献中未发现批评性引用"。
+4. **反证召回有限**：引用论文的摘要经常拿不到——OpenAlex 的 `abstract_inverted_index` 缺失率高（2026-09 抽测 3 篇全缺），Crossref 的 `abstract` 也可能为空（Nature 2015 论文实测为空）。拿不到摘要就基于标题或下全文判断，并在报告里标注每篇反证的判断依据。报"未发现反证"时措辞为"在可获取的 N 篇引用文献中未发现批评性引用"。
 5. **相似度不等于抄袭**：引用耦合相似（related_works）是正常的学术邻近关系，不能当成抄袭信号。抄袭判定只看工作流 B 的句子级重叠。
 6. **审稿与谬误判断是模型判断，不是数据事实**：输出必须分栏标注"API 数据"与"模型判断"，后者保留可核对引文，让用户自行复核。
 7. **速率礼貌**：OpenAlex 无硬限速，但批量请求间加 0.3s 间隔；同一会话内结果可复用，不要重复请求相同端点。

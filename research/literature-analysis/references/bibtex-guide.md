@@ -23,14 +23,20 @@
 
 ```python
 w = get(f"https://api.openalex.org/works/{wid}")  # get 见主 SKILL.md
-authors = " and ".join(
-    a["author"]["display_name"].replace(" ", ", ", 1) for a in w.get("authorships", [])
-)
+
+def bibtex_name(display_name):
+    # "Yann LeCun" -> "LeCun, Yann"; "Geoffrey E. Hinton" -> "Hinton, Geoffrey E."
+    parts = display_name.rsplit(" ", 1)   # 最后一词为姓（西文习惯）
+    return f"{parts[-1]}, {parts[0]}" if len(parts) == 2 else display_name
+
+authors = " and ".join(bibtex_name(a["author"]["display_name"]) for a in w.get("authorships", []))
 year = w.get("publication_year", "n.d.")
 title = w.get("title", "").replace("{", "\\{")
 doi = (w.get("doi") or "").replace("https://doi.org/", "")
 print(f"@article{{key{year},\n  author = {{{authors}}},\n  title = {{{title}}},\n  journal = {{{w.get('primary_location', {}).get('source', {}).get('display_name', '')}}},\n  year = {{{year}}},\n  doi = {{{doi}}}\n}}")
 ```
+
+姓前名后转换陷阱：不能用 `replace(" ", ", ", 1)`——它把第一个空格当分隔，会输出 "Yann, LeCun"（名当姓）。必须 `rsplit(" ", 1)` 取最后一词为姓。
 
 ## 中文文献
 

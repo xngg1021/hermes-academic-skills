@@ -58,10 +58,19 @@ Don't use for: 纯检索发现论文（用 `arxiv` skill）、OCR/解析已下�
 
 2026 年的标准做法：Crossref REST API 已并入 Retraction Watch 撤稿数据（2023-09 起共享，6 万+ 条记录），程序化核查走 Crossref，不再依赖已弃用的 Labs 注解接口（2026-05 弃用）。
 
-方法两步：
+方法三步，任一命中即判定撤稿：
 
 ```python
-# 1. 查原始 DOI 的 update-to：指向更正/撤稿/关注通知的 DOI 列表
+# 第零步（最快）：标题前缀检查。出版社常在撤稿后把标题改为 "RETRACTED: ..."，
+# 此时 update-to 可能为空。实测案例：Wakefield 1998 疫苗论文
+# （DOI 10.1016/S0140-6736(97)11096-0）update-to 为 0 条，但标题带 RETRACTED 前缀。
+title = " ".join(m.get("title") or [""])
+if title.upper().startswith(("RETRACTED", "WITHDRAWN")):
+    print("撤稿：标题带撤稿前缀")
+```
+
+```python
+# 第一步：查原始 DOI 的 update-to：指向更正/撤稿/关注通知的 DOI 列表
 import json, urllib.request
 def get(url):
     req = urllib.request.Request(url, headers={"User-Agent": "verify/1.0 (mailto:user@example.com)"})
@@ -69,13 +78,13 @@ def get(url):
 
 m = get(f"https://api.crossref.org/works/{doi}")["message"]
 updates = m.get("update-to", [])  # 每个元素有 DOI、type、label
-# 2. 逐个查 update 的类型：type 为 "retraction" = 撤稿，"correction" = 更正，"expression-of-concern" = 关注
+# 第二步：逐个查 update 的类型：type 为 "retraction" = 撤稿，"correction" = 更正，"expression-of-concern" = 关注
 for u in updates:
     t = u.get("type", "?")
     # type 不是 retraction 时，再查该 update DOI 的 message.type 确认
 ```
 
-判断规则：`update-to` 非空且存在 type 为 retraction 的记录 = **该文献已被撤稿**，必须停止引用并如实告知用户；correction 或 expression-of-concern = 文献有已知问题，引用时注明。`update-to` 为空 = 无记录（正常文献）。
+判断规则：标题带 RETRACTED/WITHDRAWN 前缀、或 update-to 存在 type 为 retraction 的记录 = **该文献已被撤稿**，必须停止引用并如实告知用户；correction 或 expression-of-concern = 文献有已知问题，引用时注明。两者皆无 = 无记录（正常文献）。
 
 兜底：Crossref 无记录但存疑时，到 Retraction Watch 数据库网页（retractiondatabase.org）人工核对；arXiv 预印本撤稿看 abs 页的 withdrawal 标记。
 

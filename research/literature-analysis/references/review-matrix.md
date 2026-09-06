@@ -5,7 +5,7 @@
 ## 流程
 
 1. 检索：用主 SKILL.md 工作流 A 的检索方法拿 20~50 篇候选（概念搜索 + related_works + 引用池），按相关性排序取前 N。
-2. 摘要重建：OpenAlex 的 `abstract_inverted_index` 重建摘要；缺失的标【需全文】，不脑补。
+2. 摘要重建：OpenAlex 的 `abstract_inverted_index` 重建摘要；缺失时先查 Crossref `works/{DOI}` 的 `message.abstract` 兜底，仍缺则标【需全文】，不脑补。
 3. 逐篇填充矩阵（五列）：
 
 | 论文(年份) | 方法 | 样本/数据 | 核心结论 | 局限/适用边界 |
