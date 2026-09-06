@@ -1,0 +1,206 @@
+[
+  {
+    "id": "F01",
+    "severity": "P1",
+    "finding": "pandas CSV/Excel slash is division; group aggregation also included nonnumeric columns",
+    "resolution_evidence": "Branch by suffix; executable CSV fixture and numeric-column aggregation."
+  },
+  {
+    "id": "F02",
+    "severity": "P1",
+    "finding": "Fixed-effects dummies were added rather than concatenated",
+    "resolution_evidence": "Full-rank float design, intercept plus n−1 dummies; recover slope 2."
+  },
+  {
+    "id": "F03",
+    "severity": "P1",
+    "finding": "Monte Carlo 10× SE improvement claimed 10,000× samples",
+    "resolution_evidence": "100× sample assertion plus deterministic pi estimate within 5 SE."
+  },
+  {
+    "id": "F04",
+    "severity": "P1",
+    "finding": "BVP was nonunique and boundary prose disagreed with code",
+    "resolution_evidence": "Original reports success but y(pi/4)≈1.2254e−10 versus 0.7071; replacement matches sinh(x), error <1e−6."
+  },
+  {
+    "id": "F05",
+    "severity": "P1",
+    "finding": "GARCH percent-squared variance labelled volatility",
+    "resolution_evidence": "Check convergence; sqrt(variance/100²), per-period decimal units, mean/residual distinction."
+  },
+  {
+    "id": "F06",
+    "severity": "P1",
+    "finding": "Annualized log return presented as generic return/Sharpe numerator",
+    "resolution_evidence": "Separate log/geometric/simple returns and explicit zero risk-free assumption."
+  },
+  {
+    "id": "F07",
+    "severity": "P1",
+    "finding": "VaR tail probability called confidence; loss sign and ES boundary mass unclear",
+    "resolution_evidence": "Define alpha tail probability, loss signs and empirical quantile; fractional tail-mass assertions."
+  },
+  {
+    "id": "F08",
+    "severity": "P1",
+    "finding": "Optimization results consumed without success/feasibility checks",
+    "resolution_evidence": "LP/MILP/portfolio analytical optima and constraint residual assertions."
+  },
+  {
+    "id": "F09",
+    "severity": "P1",
+    "finding": "Factor-regression ndarray params accessed with string const",
+    "resolution_evidence": "Explicit ndarray design and index 0; known coefficients recovered."
+  },
+  {
+    "id": "F10",
+    "severity": "P1",
+    "finding": "Crossref update-to direction could misclassify notice as retracted work",
+    "resolution_evidence": "Official docs + live reverse updates filter; target-vs-notice negative fixture."
+  },
+  {
+    "id": "F11",
+    "severity": "P1",
+    "finding": "No retraction records equated with normal paper",
+    "resolution_evidence": "Scoped negative findings; separate failed/unchecked sources, correction and concern signals."
+  },
+  {
+    "id": "F12",
+    "severity": "P1",
+    "finding": "OpenAlex quota-free/zero-config claims and per_page=200",
+    "resolution_evidence": "Current budgets/key handling; canonical per_page<=100 and cursor workflow."
+  },
+  {
+    "id": "F13",
+    "severity": "P1",
+    "finding": "Concepts main workflow and related_works described as coupling",
+    "resolution_evidence": "Topics ID workflows; related_works is topical recommendation; real coupling/co-citation distinguished."
+  },
+  {
+    "id": "F14",
+    "severity": "P1",
+    "finding": "Title-only evidence used to decide criticism/nonreplication",
+    "resolution_evidence": "Title is recall only; abstract/full text or insufficient-evidence status."
+  },
+  {
+    "id": "F15",
+    "severity": "P1",
+    "finding": "Earlier publication plus overlap treated as proof of plagiarism",
+    "resolution_evidence": "Local overlap denominator/coverage and context/version/citation boundaries; no automatic direction claim."
+  },
+  {
+    "id": "F16",
+    "severity": "P1",
+    "finding": "BibTeX surname guessing, null source access, asymmetric escaping",
+    "resolution_evidence": "Structured family/given or literal names; compound surname, Unicode and escaping assertions; null-safe source guidance."
+  },
+  {
+    "id": "F17",
+    "severity": "P1",
+    "finding": "Default Hermes tap could not discover research/ layout",
+    "resolution_evidence": "Flat skills/<name>/; actual pinned discovery method returns all four on Contents-API fixtures."
+  },
+  {
+    "id": "F18",
+    "severity": "P1",
+    "finding": "Personal interpreter path and preinstalled-environment assumptions",
+    "resolution_evidence": "Remove author path; inspect interpreter and task-specific dependencies; no presumed shared execution environment."
+  },
+  {
+    "id": "F19",
+    "severity": "P1",
+    "finding": "Plot recipes passed unexpanded tilde and omitted mkdir/imports",
+    "resolution_evidence": "Path.expanduser, parent creation, headless save/close; plots run unchanged with temporary PLOT_DIR."
+  },
+  {
+    "id": "F20",
+    "severity": "P1",
+    "finding": "Writing Verification relied on __file__ being a skill entrypoint",
+    "resolution_evidence": "Explicit SKILL_DIR/current skill directory; all six style names checked."
+  },
+  {
+    "id": "F21",
+    "severity": "P2",
+    "finding": "SciPy integer programming incorrectly declared unsupported",
+    "resolution_evidence": "SciPy >=1.9 milp, no PuLP dependency; optimum independently asserted."
+  },
+  {
+    "id": "F22",
+    "severity": "P2",
+    "finding": "lstsq described as cure for ill conditioning; Nelder-Mead universally most stable",
+    "resolution_evidence": "Rank/conditioning/scale caveats; algorithm constraints and local optimum distinctions."
+  },
+  {
+    "id": "F23",
+    "severity": "P2",
+    "finding": "Nonlinear fit exact p-value/mandatory R²/confidence-band claims",
+    "resolution_evidence": "Wald approximation, pcov scaling, parameter intervals, undefined constant-response R² and finite covariance."
+  },
+  {
+    "id": "F24",
+    "severity": "P1",
+    "finding": "Baron-Kenny significance chain treated as sufficient mediation evidence",
+    "resolution_evidence": "Indirect a*b with paired iid bootstrap CI; causal identification and clustered sampling boundaries."
+  },
+  {
+    "id": "F25",
+    "severity": "P2",
+    "finding": "Alpha/rotated-factor thresholds treated as mechanical validity tests",
+    "resolution_evidence": "Interpretation limits; current rotation support confirmed, alpha formula and fitted covariance tested."
+  },
+  {
+    "id": "F26",
+    "severity": "P2",
+    "finding": "Stratified SE omitted sampling assumptions and missing weights implied equal probability",
+    "resolution_evidence": "State layer independence, finite population correction and unavailable design; exact toy SE."
+  },
+  {
+    "id": "F27",
+    "severity": "P2",
+    "finding": "Physics examples omitted units, 2D CFL condition and spectral scale; SIR peak on sparse solver mesh",
+    "resolution_evidence": "CFL/boundary checks, Hz and PSD units, SOS response test; continuous peak agrees with SIR invariant."
+  },
+  {
+    "id": "F28",
+    "severity": "P2",
+    "finding": "Descriptions violate current Hermes period rule; related skills include absent/optional names",
+    "resolution_evidence": "Pinned six upstream rules across four skills; optional catalog explicitly identified."
+  },
+  {
+    "id": "F29",
+    "severity": "P1",
+    "finding": "Citation guide lacks promised AMA; IEEE/GB author rules and current GB/T status wrong",
+    "resolution_evidence": "AMA section, IEEE exception-aware guidance, Chicago 18 change; official GB/T 2025 date; 2015 examples explicitly legacy."
+  },
+  {
+    "id": "F30",
+    "severity": "P2",
+    "finding": "AI-detector prices/free quotas/FPR universalized without evidence",
+    "resolution_evidence": "Remove unverifiable constants; query product-specific access and score definitions, no calibrated-probability claim."
+  },
+  {
+    "id": "F31",
+    "severity": "P2",
+    "finding": "README claims every recipe verified, incorrect reference/library/checklist counts and platform evidence",
+    "resolution_evidence": "Conservative README with exact 4 skills/15 references/math 4 references and observed Linux versions."
+  },
+  {
+    "id": "F32",
+    "severity": "P2",
+    "finding": "arXiv/download/403 and Archive.org filename guarantees overstated",
+    "resolution_evidence": "Access-state wording, actual Archive.org metadata file names and arXiv version/withdrawal checks."
+  },
+  {
+    "id": "F33",
+    "severity": "P2",
+    "finding": "Research-gap and journal sampling inference exceed data",
+    "resolution_evidence": "ID-based common corpus/counts, undefined zero denominator, complete years; no saturation/predatory diagnosis from size."
+  },
+  {
+    "id": "F34",
+    "severity": "P2",
+    "finding": "No persistent QA; marked verifications were incomplete evidence",
+    "resolution_evidence": "Classification, syntax, numerical fences, upstream validation, negative guard/auth fixtures and offline CI."
+  }
+]
