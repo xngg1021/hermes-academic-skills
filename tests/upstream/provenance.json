@@ -1,0 +1,41 @@
+{
+  "repository": "NousResearch/hermes-agent",
+  "sha": "245e48008fa814b3251f50755eb656bd9fb86cb1",
+  "checked_on": "2026-09-06",
+  "related_skills": {
+    "arxiv": [
+      "skills/research/arxiv/SKILL.md"
+    ],
+    "grounded-citations": [
+      "skills/research/grounded-citations/SKILL.md"
+    ],
+    "docx": [
+      "skills/productivity/docx/SKILL.md"
+    ],
+    "pdf": [
+      "skills/productivity/pdf/SKILL.md"
+    ],
+    "huggingface-hub": [
+      "optional-skills/mlops/models/huggingface-hub/SKILL.md"
+    ],
+    "llama-cpp": [
+      "optional-skills/mlops/inference/llama-cpp/SKILL.md"
+    ],
+    "manim-video": [
+      "skills/creative/manim-video/SKILL.md"
+    ],
+    "ocr-and-documents": [],
+    "pc-hardware-benchmark": []
+  },
+  "vendored_files": {
+    "hermes_authoring_standards.py": {
+      "path": "tests/skills/test_authoring_standards.py",
+      "sha256": "eaf3eadb59a976b53b4eb0e22c9bf31736ee886777b98e497bbbebe7dadb1918"
+    },
+    "tap_discovery.py": {
+      "path": "tools/skills_hub_github.py",
+      "symbol": "GitHubSource._list_skills_in_repo",
+      "sha256": "891c47ffc97047c4c544d3dd88cea4aedf3edd8c99b91c66f83d243e88fd0084"
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # hermes-academic-skills
 
-Four academic skills for the Hermes Agent, built and battle-tested on a real research workflow. All data sources are free-tier (OpenAlex, Crossref, Unpaywall, arXiv, Europe PMC, PubMed, DOAJ) and every recipe was verified against live APIs or real numerical results.
+Four Chinese-language academic skills for Hermes Agent. They cover source verification, literature analysis, academic writing, and numerical computation. The repository includes executable example checks; validation scope and external-service limitations are recorded in [the audit](docs/audit-20260906.md).
 
 Author: Junfu Shi (SJF, xngg1021), Hermes Agent. License: MIT.
 
@@ -8,19 +8,52 @@ Author: Junfu Shi (SJF, xngg1021), Hermes Agent. License: MIT.
 
 | Skill | Version | What it does |
 | --- | --- | --- |
-| `research/academic-source-verification` | 1.1.0 | Verify a paper is real: three-database cross-check (OpenAlex / Crossref / Semantic Scholar), retraction & correction check via Crossref (Retraction Watch data), OA full-text location (Unpaywall), PDF content verification |
-| `research/literature-analysis` | 1.1.0 | 12 workflows around a paper: similarity search, local sentence-level plagiarism check, counter-evidence mining, author profile, mock peer review, fallacy annotation (30 types), review matrix, journal matching, BibTeX export, bilingual reading, research-gap analysis, reproduction helper |
-| `research/academic-writing` | 1.1.0 | Writing & submission: 3-layer editing, 6 citation styles (APA 7 / MLA 9 / Chicago 18 / IEEE / AMA 11 / GB/T 7714-2015), journal instruction retrieval, AI-content detection channels, submission letters, China academia scenarios |
-| `research/math-computation` | 1.2.0 | Cross-domain computation hub with 2-layer routing: domain detection (finance / social science / biomedicine / physics-engineering / pure math) then task-to-tool mapping. 16 libraries, 7 reference files, all recipes numerically verified |
+| `skills/academic-source-verification` | 1.1.1 | Cross-check identity and source-specific citation counts; inspect update/retraction signals; locate OA text and verify PDF identity |
+| `skills/literature-analysis` | 1.2.0 | Twelve workflows: topic similarity, local text overlap, counter-evidence, author profiles, mock review, fallacy checks, review matrix, journal candidates, BibTeX, bilingual reading, research-gap screening, reproduction |
+| `skills/academic-writing` | 1.1.1 | Editing, citation guidance (APA, MLA, Chicago, IEEE, AMA, GB/T), journal instructions, optional detection services, submission materials, Chinese academic requirements |
+| `skills/math-computation` | 1.2.1 | Existing domain/task routing with corrected numerical/statistical examples; four domain/advanced reference files |
 
-## Data-source tiers
+There are 15 Markdown reference files across the four skills. References load only when needed. GB/T 7714-2025 is now in force; the writing reference distinguishes its verified effective date from explicitly labelled 2015 examples. Full 2025 compliance requires the target institution's template or standard text.
 
-- Free (works out of the box): OpenAlex, Crossref, Unpaywall, arXiv, Europe PMC, PubMed E-utilities, DOAJ
-- Freemium (free registration): Semantic Scholar (rate-limit lift + citation contexts), Scite free tier, Dimensions free, CiNii appid
-- Paid (bring your own key): Scopus, Web of Science, Dimensions API, Scite Pro; AI detection: GPTZero / Copyleaks / Originality.ai
+## Install in Hermes
 
-## Notes
+Current upstream tap discovery inspects immediate child directories under `skills/`. Each skill therefore lives directly under that root. From a Hermes installation:
 
-- Current version is written in Chinese (author's working language). An English release edition is in preparation before upstream PRs.
-- No API keys or personal paths are hardcoded; placeholder emails are intentional and must be replaced per Unpaywall's validation.
-- Verified on: Windows 11 (Chinese locale), Hermes Agent v2026.8.31, Python 3.11 venv with sympy 1.14 / numpy 2.4 / scipy 1.17 / pandas 2.3 / statsmodels 0.14 / lifelines 0.30 / arch 8.0 / pingouin 0.6.
+```bash
+hermes skills tap add xngg1021/hermes-academic-skills
+hermes skills search academic-source-verification
+hermes skills install xngg1021/hermes-academic-skills/skills/academic-source-verification
+```
+
+Install the other three by substituting their directory name in the full identifier. A normal tap reads the default branch; these changes become its default only after this PR is merged. To inspect a work branch before merge, check out that branch locally and follow the installed Hermes version's local-folder installation instructions. Do not assume the tap command selects a PR branch.
+
+Bundled related skills checked at upstream `245e48008fa814b3251f50755eb656bd9fb86cb1`: arxiv, grounded-citations, docx, pdf, manim-video. huggingface-hub and llama-cpp are in the optional catalog and may need installation. ocr-and-documents and pc-hardware-benchmark were not found in that snapshot and are not dependencies. Session tools and document/browser backends depend on local configuration.
+
+## Data-source access
+
+- OpenAlex basic queries can run anonymously with a smaller daily budget. On 2026-09-06 current docs specify $0.10/day anonymous and $1/day with a free API key, plus a 100 requests/second ceiling. Costs differ by query type; this is not unlimited access. Store an optional key in `OPENALEX_API_KEY`. Use `per_page` (maximum 100) and cursor pagination.
+- Crossref has public metadata access with throttling. Update relationships and Retraction Watch signals require DOI/direction checks; missing records do not prove a paper is unaffected.
+- Unpaywall requires a real contact email in `UNPAYWALL_EMAIL`. An absent location does not prove that no OA copy exists.
+- arXiv, Europe PMC, PubMed E-utilities and DOAJ are supplementary sources with their own policies. They are not all exercised by default tests. Semantic Scholar has shared anonymous limits and separately assigned key limits; access does not guarantee citation-context availability.
+- Scite, Dimensions, Scopus, Web of Science and AI-detection products are optional external services. Check current account/API entitlements and quotas before use; no universal free tier or fixed price is promised.
+
+See [OpenAlex authentication](https://help.openalex.org/api/authentication/), [budgets/query costs](https://help.openalex.org/api/llm-quick-reference/), and [Crossref update filters](https://www.crossref.org/documentation/retrieve-metadata/rest-api/rest-api-filters/).
+
+## Validation
+
+Use a dedicated Python environment. Runtime libraries are task-specific, not guaranteed installed in Hermes. QA dependencies are broader so all marked examples can run:
+
+```bash
+python -m pip install -r requirements-qa.txt
+python -m pip install 'torch>=2.5,<3' --index-url https://download.pytorch.org/whl/cpu
+python scripts/qa.py
+python -m pytest -q tests
+python scripts/verify_external_apis.py
+git diff --check
+```
+
+QA validates metadata, references, personal-path/known-secret patterns, Python syntax and marked executable fences. Each smoke example runs unchanged in a fresh subprocess. Plot examples accept `PLOT_DIR` (default `~/plots`, explicitly expanded); tests use a temporary directory. Unclassified Python fences are rejected; `fragment:` blocks are syntax-checked but require named inputs and are not executed standalone. `external-test:` blocks run only via the manual external command. It returns 0 on passed configured checks, 1 on code/schema/identity failure, and 2 on transport/authentication/quota unavailability; optional unconfigured services remain SKIP.
+
+Pinned Hermes authoring tests are reused without changing their per-skill rules. Upstream whole-distribution population checks do not apply to this tap; our harness checks four skills and resolves references against the pinned bundled/optional catalog. This is not a complete Hermes installation test. CI uses network only to install dependencies; ordinary PR tests do not call scholarly APIs.
+
+Linux/Python 3.12 is tested in this pass. Linux, macOS and Windows remain intended platforms; native Windows/macOS execution, every dependency-version combination, and a fresh Hermes session are not claimed. Exact versions, checks and limitations are in [the audit](docs/audit-20260906.md).

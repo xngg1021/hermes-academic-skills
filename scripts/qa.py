@@ -1,0 +1,171 @@
+"""Offline QA. Executes only classified smoke fences, always in fresh subprocesses."""
+import argparse
+import ast
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[1]
+FENCE = re.compile(r'^```python\s*\n(.*?)^```\s*$', re.M | re.S)
+KINDS = ('smoke-test: true', 'external-test: true', 'fragment:')
+
+
+def fences(path):
+    text = path.read_text(encoding='utf-8')
+    for i, match in enumerate(FENCE.finditer(text), 1):
+        code = match.group(1)
+        kinds = [kind for kind in KINDS if any(line.strip().startswith('# ' + kind) for line in code.splitlines())]
+        if len(kinds) != 1:
+            raise ValueError(f'{path}:{i}: exactly one fence classification required')
+        yield i, kinds[0], code
+
+
+def code_issues(code):
+    tree = ast.parse(code)
+    errors = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            if node.func.attr in {'savefig', 'open'} and node.args:
+                if isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str) and node.args[0].value.startswith('~/'):
+                    errors.append('unexpanded tilde passed to file API')
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+            names = []
+            for side in [node.left, node.right]:
+                if isinstance(side, ast.Call) and isinstance(side.func, ast.Attribute):
+                    names.append(side.func.attr)
+            if set(names) == {'read_csv', 'read_excel'}:
+                errors.append('CSV/Excel pseudo-alternative is DataFrame division')
+    return errors
+
+
+def hygiene(text):
+    patterns = [r'(?i)\b[A-Z]:[/\\]+Users[/\\]+(?!<)[\w.-]+',
+                r'/(?:Users|home)/(?!<|runner\b)[\w.-]+/',
+                r'\b(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|sk-[A-Za-z0-9]{24,})\b',
+                r'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----',
+                r'''(?i)\b(?:api_key|access_token|secret|password)\s*[:=]\s*["'](?!<|YOUR_|example|placeholder|test)[A-Za-z0-9_-]{16,}["']''']
+    return [m.group() for pat in patterns for m in re.finditer(pat, text)]
+
+
+def reference_issues(path, root=ROOT):
+    text = path.read_text(encoding='utf-8')
+    candidates = re.findall(r'\[[^\]]*\]\(([^)]+)\)', text)
+    candidates += re.findall(r'`((?:references|scripts)/[^`\s]+\.\w+)`', text)
+    errors = []
+    for target in candidates:
+        target = target.split('#', 1)[0]
+        if not target or '://' in target or target.startswith('mailto:'):
+            continue
+        if any(c in target for c in '<>*'):
+            continue  # explicit template / glob, not a concrete reference
+        dest = path.parent / target
+        if not dest.exists():
+            errors.append(f'missing or case-mismatched reference: {target}')
+        elif not dest.resolve().is_relative_to(root.resolve()):
+            errors.append(f'reference outside repository: {target}')
+        else:
+            # Compare actual directory-entry spellings, also on case-insensitive hosts.
+            actual = path.parent
+            for part in Path(target).parts:
+                if part == '..':
+                    actual = actual.parent
+                elif part != '.':
+                    if part not in {entry.name for entry in actual.iterdir()}:
+                        errors.append(f'case mismatch: {target}')
+                        break
+                    actual = actual / part
+    return errors
+
+
+def static_checks(root=ROOT):
+    errors, names = [], set()
+    readme = (root / 'README.md').read_text(encoding='utf-8')
+    paths = sorted(root.glob('skills/*/SKILL.md'))
+    if len(paths) != 4 or len(list(root.glob('skills/**/SKILL.md'))) != 4:
+        errors.append('expected four skills directly under default tap root skills/')
+    for path in paths:
+        text = path.read_text(encoding='utf-8')
+        try:
+            assert text.startswith('---\n')
+            fm = yaml.safe_load(text.split('---', 2)[1])
+            assert isinstance(fm, dict)
+            for key in ('name', 'description', 'version', 'author', 'license', 'platforms'):
+                assert key in fm, f'missing {key}'
+            name = fm['name']
+            assert name == path.parent.name and re.fullmatch('[a-z0-9]+(?:-[a-z0-9]+)*', name)
+            assert name not in names, f'duplicate name {name}'
+            names.add(name)
+            assert isinstance(fm['version'], str) and re.fullmatch(r'\d+\.\d+\.\d+', fm['version'])
+            assert isinstance(fm['description'], str) and 0 < len(fm['description']) <= 60
+            assert fm['description'].endswith('.')
+            assert isinstance(fm['platforms'], list) and set(fm['platforms']) <= {'linux', 'macos', 'windows'} and fm['platforms']
+            hermes = fm['metadata']['hermes']
+            assert isinstance(hermes['tags'], list) and hermes['tags'] and all(isinstance(t, str) and t for t in hermes['tags'])
+            assert isinstance(hermes.get('related_skills', []), list)
+            assert f'| `skills/{name}` | {fm["version"]} |' in readme, 'README version mismatch'
+            section = text.split('## Verification', 1)[1]
+            assert re.search(r'# (?:smoke|external)-test: true', section), 'Verification not executable'
+        except (AssertionError, KeyError, IndexError, TypeError, yaml.YAMLError) as e:
+            errors.append(f'{path.relative_to(root)}: frontmatter/verification {e}')
+    for path in sorted(root.rglob('*.md')):
+        if '.git' in path.parts:
+            continue
+        errors.extend(f'{path.relative_to(root)}: {e}' for e in reference_issues(path, root))
+        try:
+            for i, kind, code in fences(path):
+                errors.extend(f'{path.relative_to(root)}:{i}: {e}' for e in code_issues(code))
+        except (ValueError, SyntaxError) as e:
+            errors.append(str(e))
+    for path in root.rglob('*'):
+        if not path.is_file() or '.git' in path.parts or '__pycache__' in path.parts or '.pytest_cache' in path.parts:
+            continue
+        if path.suffix not in {'.md', '.py', '.json', '.yaml', '.yml', '.txt'}:
+            continue
+        errors.extend(f'{path.relative_to(root)}: personal path or secret detected' for _ in hygiene(path.read_text(encoding='utf-8')))
+    return errors
+
+
+def run_fence(path, index, code, timeout=120):
+    with tempfile.TemporaryDirectory(prefix='hermes-qa-') as temp:
+        script = Path(temp) / 'example.py'
+        script.write_text(code, encoding='utf-8')
+        skill = next(p for p in [path.parent, *path.parents] if (p / 'SKILL.md').exists())
+        env = dict(os.environ, MPLBACKEND='Agg', MPLCONFIGDIR=str(Path(temp) / 'mpl'),
+                   SKILL_DIR=str(skill), PLOT_DIR=str(Path(temp) / 'plots'), PYTHONIOENCODING='utf-8', OPENBLAS_NUM_THREADS='1', OMP_NUM_THREADS='1')
+        return subprocess.run([sys.executable, str(script)], cwd=skill, env=env,
+                              capture_output=True, text=True, encoding='utf-8', timeout=timeout)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--static-only', action='store_true')
+    args = parser.parse_args()
+    errors = static_checks()
+    count = 0
+    if not args.static_only:
+        for path in sorted((ROOT / 'skills').rglob('*.md')):
+            for i, kind, code in fences(path):
+                if kind != 'smoke-test: true':
+                    continue
+                count += 1
+                try:
+                    result = run_fence(path, i, code)
+                    if result.returncode:
+                        errors.append(f'{path.relative_to(ROOT)}:{i}: {result.stderr}')
+                except subprocess.TimeoutExpired:
+                    errors.append(f'{path.relative_to(ROOT)}:{i}: timeout')
+    if errors:
+        print('\n'.join(errors))
+        return 1
+    print(f'PASS static QA; {count} independent executable fences')
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
