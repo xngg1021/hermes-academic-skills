@@ -2,9 +2,9 @@
 
 对应工作流 L。找论文的官方代码与数据集，跑通最小示例。
 
-## 渠道现状（2026 实测）
+## 渠道选择
 
-Papers with Code 的 v1 API 已停用（请求返回网页 HTML 而非 JSON），不再使用。替代路径三条：
+旧 Papers with Code v1 API 不作为稳定依赖；单次返回 HTML 不足以证明永久停用。优先论文主页确认当前代码/数据地址，备选路径三条：
 
 1. **GitHub 搜索**（首选）：`gh search repos "<论文名>" --limit 10` 或 `gh search repos "<方法名> <第一作者>"`；优先官方实现（作者本人账号），其次高 star 复现仓库（star 数、最近提交时间、issue 活跃度三个信号）。
 2. **HuggingFace 数据集**：用 `huggingface-hub` 技能查论文 benchmarks 用的数据集是否公开。

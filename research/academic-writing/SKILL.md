@@ -1,19 +1,19 @@
 ---
 name: academic-writing
-description: "学术写作:润色编辑、引用规范生成、期刊投稿格式检索、AI 生成成分检测。"
-version: 1.1.0
+description: "学术写作:润色编辑、引用规范生成、期刊投稿格式检索、AI 生成成分检测."
+version: 1.1.1
 author: SJF, Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
   hermes:
     tags: [writing, citation, journal-submission, ai-detection, editing]
-    related_skills: [literature-analysis, academic-source-verification, docx, pdf, ocr-and-documents]
+    related_skills: [literature-analysis, academic-source-verification, docx, pdf]
 ---
 
 # 学术写作 Skill
 
-四个工作流：论文辅助编辑（本地文件与编辑平台）、引用规范生成（多风格批量排版）、期刊投稿格式检索（最新投稿须知）、AI 生成成分检测（渠道聚合）。与 `literature-analysis` 分工：那个管"读论文"，本技能管"写论文与投稿"。
+六个工作流（含投稿材料与中文学术场景）：论文辅助编辑（本地文件与编辑平台）、引用规范生成（多风格批量排版）、期刊投稿格式检索（最新投稿须知）、AI 生成成分检测（渠道聚合）。与 `literature-analysis` 分工：那个管"读论文"，本技能管"写论文与投稿"。
 
 核心原则：编辑不改作者原意与数据；引用条目不编造字段；AI 检测结果只作概率参考不作事实判定；期刊指南注明检索日期。输出语言默认跟随用户输入语言；引文与论文原文保留原文不翻译。
 
@@ -29,7 +29,7 @@ metadata:
 
 ## 工作流 A：论文辅助编辑
 
-输入：本地文件（`read_file` 直接读 docx/pdf/md；tex 按文本读）、平台文本（用户粘贴）、或浏览器里的在线编辑器。
+输入：本地文件（`read_file` 可提取 docx/pdf 文本（当前 Hermes 上游支持，受转换依赖/大小限制）；md/tex 按文本读，扫描 PDF 需 OCR，版式核对仍须文档工具）、平台文本（用户粘贴）、或浏览器里的在线编辑器。
 
 三层编辑，逐层执行并分开报告：
 
@@ -41,11 +41,11 @@ metadata:
 
 ## 工作流 B：引用规范生成
 
-用户选择风格后，按 `references/citation-styles.md` 的规则生成文中引用与文末参考文献条目。现行版本（2026 核查）：APA 7th（2020）、MLA 9th（2021）、Chicago 18th（2024 年发布，注意部分机构仍指定 17th，先确认再排）、IEEE（持续更新）、AMA 11th（2020）、GB/T 7714-2015（中文期刊通行）。
+用户选择风格后，按 `references/citation-styles.md` 的规则生成文中引用与文末参考文献条目。现行版本（2026 核查）：APA 7th（2020）、MLA 9th（2021）、Chicago 18th（2024 年发布，注意部分机构仍指定 17th，先确认再排）、IEEE（持续更新）、AMA 11th（2020）、GB/T 7714-2025（2026-07-01 实施）；机构明确要求 2015 时沿用指定版本。
 
 执行方式：
 
-1. 让用户确认风格与目标刊物（中文期刊默认 GB/T 7714-2015）。
+1. 让用户确认风格与目标刊物（中文文献先核对机构指定版本；未指定时按现行 GB/T 7714-2025 查规则）。
 2. 逐条解析文献信息（作者、年份、标题、期刊/出版社、卷期页、DOI），缺字段标"【待补】"，禁止编造。
 3. 按风格规则输出格式化条目 + 文中引用样例（正文内 (Author, Year) 或 [1] 式）。
 4. 批量转换时输出对照表（原始信息 → 格式化条目），便于核对。
@@ -56,26 +56,19 @@ metadata:
 
 1. `web_search` 用"<期刊名> Instructions for Authors"（中文期刊用"<期刊名> 投稿须知 投稿指南"）找官网页面，优先期刊官网域名。
 2. `web_extract` 抓取指南页，提取：字数/页数限制、摘要结构要求、正文结构、参考文献风格、图表规范（分辨率、格式）、投稿系统入口、审稿周期说明。
-3. 输出"投稿清单"（逐项要求 + 来源链接 + 检索日期）。指南页若为动态渲染抓不到，用 `browser_exec` 兜底，或如实说明只能拿到部分信息。
+3. 输出"投稿清单"（逐项要求 + 来源链接 + 检索日期）。指南页若为动态渲染抓不到，检查当前浏览器后端：默认用 `browser_navigate` → `browser_snapshot`；browser-use 后端用其实际暴露的 `browser_exec`，不混用两套 schema，或如实说明只能拿到部分信息。
 
 注意：投稿指南频繁改版，输出必须注明检索日期，并建议用户投稿前对照官网最终确认。
 
 ## 工作流 D：AI 生成成分检测（渠道聚合）
 
-诚实前置（必须向用户说明）：所有 AI 检测器的独立测试假阳性率在 2%~7%，对学术文本尤其不稳，检测分数只能作为概率参考信号，不能作为"这篇是 AI 写的"的事实依据，更不建议用于指控他人。
+检测输出是产品定义的评分；未验证校准时不称“作者使用 AI 的概率”或真实 AI 占比。假阳性率随模型、语言、体裁、阈值和评估集变化，不能给所有检测器统一的 2%~7% 数值。
 
-渠道分层（2026 核查）：
+可选渠道：GPTZero、Copyleaks、Originality.ai。执行前查各自官方当前访问条件、额度、API 许可与最小长度要求；网页订阅不等于 API 权限，不在 skill 固化未经持续验证的价格。TextSight 等未核实渠道不作默认依赖。
 
-白嫖层（免费注册，额度有限）：
-- GPTZero：免费层 1 万词/月（注册即可，无信用卡），API 需 Professional 计划（约 $24.99/月）
-- Copyleaks：免费额度（注册），API 最低 $7.99/月起，多语言支持最好，1 credit = 250 词
-- TextSight：无需注册每天 3 次网页检测（无 API，只能手动）
+无 key 时只给核实后的操作步骤；有 key 时通过环境变量读取，依实际端点文档执行。遵守各服务允许长度与上下文要求，不固定按 500~1500 词切分，也不将分段分数平均解释为全文 AI 比例。保留产品、版本/查询日、输入范围与原始分数；只能作为辅助信号。对用户未授权上传的未公开文稿，不自动发送给外部检测服务。
 
-付费层（自备 key 自动聚合）：GPTZero API、Copyleaks API、Originality.ai（Pay-as-you-go $30 起，独立测试假阳性 2%~5.7%）。
-
-无 key 状态：本技能只给渠道指引与操作步骤，不假装能自动检测；用户接入 key（写进环境变量）后，检测流程：按 500~1500 词切段分别送检，报告分段得分、整体分布、以及"结果仅供概率参考"的固定声明。
-
-本地无可靠开源检测器，不提供本地检测方案，避免误导。
+本地模型是否可用须按具体语言/语料独立评估，不对所有开源检测器作绝对结论。
 
 ## 工作流 E：投稿材料（投稿信 / 审稿回复信 / 预印本）
 
@@ -95,26 +88,28 @@ metadata:
 
 ## Pitfalls
 
-1. **AI 检测结果不能当事实**。假阳性 2%~7% 意味着 100 篇里可能有 2~7 篇被冤枉；报告分数时必须附此声明，禁止输出"确认是 AI 写的"这类定性结论。
+1. **AI 检测结果不能当事实**。需说明分数定义与适用范围，不将未校准分数当概率或给出统一假阳性率，禁止输出"确认是 AI 写的"这类定性结论。
 2. **引用条目禁止编造字段**。卷、期、页码、DOI 缺失就标【待补】，宁可让用户补，也不生成看似合理的假字段。
 3. **Chicago 18 与 17 并存**。2026 年 CMOS 18 已出版但大量机构仍在用 17th，排版前必须确认目标要求，两个版本页码引用规则有差异。
 4. **期刊指南时效**。Instructions for Authors 随时改版，输出必须带检索日期与来源链接。
 5. **编辑不改原意**。学术论文润色最大的风险是"顺手改了结论表述"；任何影响语义的修改都要单独标出请用户确认。
-6. **中文期刊引用风格**。中文期刊普遍要求 GB/T 7714-2015，别默认给 APA；作者名、期刊名的中英双语著录规则见 `references/citation-styles.md`。
-7. **GBK 陷阱**。处理中文 docx/tex 时若脚本报编码错误，先确认文件以 UTF-8 读写；Windows 下默认 GBK 会破坏中文内容（参见 hermes-agent 技能 windows-quirks）。
+6. **中文期刊引用风格**。GB/T 7714-2025 已实施；目标机构若指定 2015，遵从其版本，避免混用规则；作者名、期刊名的中英双语著录规则见 `references/citation-styles.md`。
+7. **GBK 陷阱**。处理中文 docx/tex 时若脚本报编码错误，文本文件明确编码；docx 是 ZIP/XML 容器，用文档库读写，不能当 UTF-8 文本解码；Windows 默认编码依配置而异（参见 hermes-agent 技能 windows-quirks）。
 
 ## Verification
 
 ```python
+# smoke-test: true
+# 从已安装 skill 目录运行，或把 SKILL_DIR 环境变量设为该目录。
 import os
-base = os.path.dirname(__file__)
-ref = os.path.join(base, "references", "citation-styles.md")
-text = open(ref, encoding="utf-8").read()
-for style in ("APA", "MLA", "Chicago", "IEEE", "GB/T 7714"):
-    assert style in text, f"引用风格 {style} 缺失"
-for ref in ("submission-letters.md", "china-academia.md"):
-    assert os.path.exists(os.path.join(base, "references", ref)), f"{ref} 缺失"
-print("academic-writing 引用风格表与投稿材料自检通过")
+from pathlib import Path
+base = Path(os.environ.get('SKILL_DIR', '.')).expanduser().resolve()
+text = (base / 'references/citation-styles.md').read_text(encoding='utf-8')
+for style in ('APA', 'MLA', 'Chicago', 'IEEE', 'AMA', 'GB/T 7714'):
+    assert style in text, f'引用风格 {style} 缺失'
+for ref in ('submission-letters.md', 'china-academia.md'):
+    assert (base / 'references' / ref).is_file(), f'{ref} 缺失'
+print('academic-writing reference verification passed')
 ```
 
 （AI 检测渠道依赖外部服务与用户自备 key，不进自检；期刊指南检索依赖 web_search，按需验证。）

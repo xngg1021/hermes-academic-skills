@@ -19,28 +19,42 @@
 - 标题：保持原文大小写，易被 LaTeX 转小写的词（如 IEEE、GPT、RAG）用花括号包裹：`title = {A Survey on {RAG}}`。
 - DOI：有 DOI 就写 `doi` 字段，不带 URL 前缀。
 - key 命名：`第一作者姓+年份+标题首词`，如 `vaswani2017attention`，同一 bib 内不重复。
-- 从 OpenAlex 自动生成的脚本骨架：
+- 优先取 Crossref 给出的 family/given 或机构 name；OpenAlex display_name 不包含可靠姓/名边界，不用 rsplit 猜复姓/文化命名规则。只有 display_name 时保留完整字面姓名并标待核，不能默默重排。
+- 文献类型、作者、卷期页与 DOI 是否必需依条目类型/样式而异，上表是收集清单，不是所有格式都必填。OpenAlex primary_location/source 均可能为 null；先用 `(w.get('primary_location') or {}).get('source') or {}` 再取字段。完整作者表可能被截断，须核对原文。
+- 以下可运行示例使用结构化 Crossref 元数据；生产输入替换 fixture，未知字段留待核，不输出假的年份/期刊：
 
 ```python
-w = get(f"https://api.openalex.org/works/{wid}")  # get 见主 SKILL.md
+# smoke-test: true
+def tex_escape(text):
+    replacements = {'\\': r'\textbackslash{}', '{': r'\{', '}': r'\}',
+                    '&': r'\&', '%': r'\%', '$': r'\$', '#': r'\#',
+                    '_': r'\_', '~': r'\textasciitilde{}', '^': r'\textasciicircum{}'}
+    return ''.join(replacements.get(c, c) for c in str(text))
 
-def bibtex_name(display_name):
-    # "Yann LeCun" -> "LeCun, Yann"; "Geoffrey E. Hinton" -> "Hinton, Geoffrey E."
-    parts = display_name.rsplit(" ", 1)   # 最后一词为姓（西文习惯）
-    return f"{parts[-1]}, {parts[0]}" if len(parts) == 2 else display_name
+def bibtex_name(author):
+    family, given = author.get('family'), author.get('given')
+    if family:
+        return tex_escape(family) + (', ' + tex_escape(given) if given else '')
+    literal = author.get('name') or author.get('display_name')
+    if not literal:
+        raise ValueError('author name missing; do not invent')
+    return '{' + tex_escape(literal) + '}'  # literal name; flag personal display_name for review
 
-authors = " and ".join(bibtex_name(a["author"]["display_name"]) for a in w.get("authorships", []))
-year = w.get("publication_year", "n.d.")
-title = w.get("title", "").replace("{", "\\{")
-doi = (w.get("doi") or "").replace("https://doi.org/", "")
-print(f"@article{{key{year},\n  author = {{{authors}}},\n  title = {{{title}}},\n  journal = {{{w.get('primary_location', {}).get('source', {}).get('display_name', '')}}},\n  year = {{{year}}},\n  doi = {{{doi}}}\n}}")
+authors = [{'family': 'LeCun', 'given': 'Yann'},
+           {'family': 'de la Cruz', 'given': 'María'}, {'name': 'Research & Co.'}]
+author_field = ' and '.join(map(bibtex_name, authors))
+assert bibtex_name(authors[0]) == 'LeCun, Yann'
+assert bibtex_name(authors[1]) == 'de la Cruz, María'
+assert bibtex_name({'display_name': '王小明'}) == '{王小明}'
+assert tex_escape('A_{B} & 5%') == r'A\_\{B\} \& 5\%'
+title = tex_escape('Example {RAG} & Methods')  # plain-text title, not pre-escaped LaTeX
+entry = '@misc{example,\n  author = {' + author_field + '},\n  title = {{' + title + '}}\n}'
+print(entry)  # illustrative misc; no fabricated year/DOI/journal
 ```
-
-姓前名后转换陷阱：不能用 `replace(" ", ", ", 1)`——它把第一个空格当分隔，会输出 "Yann, LeCun"（名当姓）。必须 `rsplit(" ", 1)` 取最后一词为姓。
 
 ## 中文文献
 
-中文文献推荐用 biblatex 的 gb7714-2015 样式包（`biblatex-gb7714-2015`，对应 GB/T 7714-2015），普通 BibTeX 对中文排序与"等/et al."处理不佳。中文期刊文章条目字段与英文相同，author 写中文全名。
+中文文献推荐用 biblatex 的 gb7714-2015 样式包（`biblatex-gb7714-2015`，对应旧版 GB/T 7714-2015；现行 2025 需先确认样式包版本支持，不能自动视为等价），普通 BibTeX 对中文排序与"等/et al."处理不佳。中文期刊文章条目字段与英文相同，author 写中文全名。
 
 ## 验证
 

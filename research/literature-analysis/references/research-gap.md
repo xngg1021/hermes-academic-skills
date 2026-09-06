@@ -6,17 +6,18 @@
 
 1. 确定候选主题对/主题组合（如"图神经网络 × 金融风控"）。
 2. 密度对比：
-   - 单主题论文量：`GET https://api.openalex.org/works?search=<主题A>&per-page=1` 看 `meta.count`。
-   - 组合主题论文量：`search=<主题A> <主题B>` 的 `meta.count`，或 `filter=concepts.id:<A>,concepts.id:<B>`。
-   - 交叉密度 = 组合量 / min(单主题量)，比值越低说明交叉区越空。
-3. 时间趋势：组合查询加 `group_by=publication_year`（`https://api.openalex.org/works?search=<组合>&group_by=publication_year`）看近三年增速——低基数高增速 = 正在兴起；低基数低增速 = 冷门（可能是空白也可能是死路）。
-4. 被引集中度：组合区论文的 `cited_by_count` 分布——少数高被引 + 大量低被引说明有领头工作但未饱和。
+   - 单主题论文量：先通过 /topics?search=<主题词> 核实 topic ID，再用 `GET https://api.openalex.org/works?filter=topics.id:<TA>&per_page=1&corpus=core` 看 `meta.count`。
+   - 组合主题论文量：`filter=topics.id:<TA>,topics.id:<TB>&corpus=core` 的 meta.count（AND）；单主题 B 同理，统一 corpus、时间窗和类型。
+   - 交叉密度 = 组合量 / min(单主题量)，分母为零时未定义（报 N/A），比值低仅表示该分类口径中共现比例低。
+3. 时间趋势：相同 topic AND 查询加 `group_by=publication_year`看近三个完整年度增速（零基数时增速未定义，不把当年未完年度直接比较）——低基数高增速 = 正在兴起；低基数低增速 = 冷门（可能是空白也可能是死路）。
+4. 被引集中度：组合区论文的 `cited_by_count` 分布——需控制发表年龄与领域，不能据该形态判断是否饱和。
 
 ## 输出格式
 
 | 主题组合 | 单主题量 A/B | 交叉量 | 密度比 | 近三年趋势 | 初步判断 |
+| --- | --- | --- | --- | --- | --- |
 
-判断措辞固定为"交叉区论文密度低/增长快/已饱和"，禁止写"这里存在空白"这类确定性结论——数据只说明发表密度，不能证明无人做或值得做。
+判断措辞固定为"交叉区论文密度低/增长快/共现比例高"，禁止写"这里存在空白"这类确定性结论——数据只说明发表密度，不能证明无人做或值得做。
 
 ## 诚实边界
 

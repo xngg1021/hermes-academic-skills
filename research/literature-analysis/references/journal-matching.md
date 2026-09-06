@@ -4,16 +4,15 @@
 
 ## 方法
 
-1. 拿目标论文的主题标签：`GET https://api.openalex.org/works/<WID>?select=concepts,topics`，取 score ≥ 0.4 的 concepts 与全部 topics。
-2. 对每个主题反查高发刊源，两种方法并用取并集：
-   - 名称搜索：`GET https://api.openalex.org/sources?search=<主题词>&sort=works_count:desc&per-page=5`（注意：sources 的 search 按刊名匹配，主题词不一定出现在刊名里——实测 "graph neural network" 返回 0 条，不能只用它）
-   - 主题反查（更稳）：`GET https://api.openalex.org/works?search=<主题词>&per-page=200&select=primary_location`，统计 `primary_location.source.id` 出现频次，按频次排序取 top 刊源
-3. 汇总打分：论文每个 concept 命中的期刊 +1 分（topic 命中 +2），按总分排序取前 10。
-4. 过滤：去掉 predatory 特征明显的（无 ISSN、works_count 过小、出版社不在主流列表），标注 OA 状态。
+1. 取论文 `topics` 和 `primary_topic`，按 ID 而非显示名称匹配；缺失时走明确标注的文本搜索兜底。
+2. 每个 topic 用 `GET https://api.openalex.org/works?filter=topics.id:<TID>&group_by=primary_location.source.id&corpus=core` 聚合刊源，固定日期窗口和文献类型。如取 works 样本则 per_page<=100，用 cursor 分页并报告截断，不能将相关性排序前 100 篇频次当作全体期刊排名。
+3. 对命中多个 topic 的 source 记录各自文献量、主题命中数与主主题是否命中。这是候选匹配启发式，不把 topic 分类分数当作录用率，也不将 Concepts 与 Topics 重复计分。
+4. 查候选 source 的 type、ISSN、官网 aims/scope、近期文章和投稿要求，区分期刊、会议与仓储。sources?search 按刊名搜索，只能补充名称查找。无 ISSN、规模小或出版社不熟悉均不足以判为 predatory，需核查具体行为证据。
 
 ## 输出格式
 
 | 候选期刊 | 命中主题 | 该刊相关论文量 | 类型/出版社 | 备注 |
+| --- | --- | --- | --- | --- |
 
 每刊附一行推荐理由（哪些主题重叠 + 该刊发表过的最接近论文示例 1~2 篇）。
 

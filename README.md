@@ -4,9 +4,11 @@ Four Chinese-language academic skills for Hermes Agent. MIT; author Junfu Shi (S
 
 | Skill | Version |
 | --- | --- |
-| research/academic-source-verification | 1.1.0 |
-| research/literature-analysis | 1.1.0 |
-| research/academic-writing | 1.1.0 |
+| research/academic-source-verification | 1.1.1 |
+| research/literature-analysis | 1.2.0 |
+| research/academic-writing | 1.1.1 |
 | research/math-computation | 1.2.1 |
 
-This corrective commit covers numerical recipes: executable fixtures verify BVP/LP/MILP/Monte Carlo, return and risk units, regression, mediation, sampling and physics examples. Math has four reference files. Dependencies must be checked in the selected interpreter; the old author-machine package list is not a lockfile. Other skills retain their existing behavior for the next correctness commit. This repository does not claim that all recipes, API services or operating systems have been verified.
+Current correctness revisions cover numerical recipes, Crossref update direction and scoped retraction findings, OpenAlex Topics/budgets/pagination, BibTeX names and citation guidance. There are 15 reference files; four belong to math. Example assertions distinguish executable, input-dependent and external checks. No universal API-free/unlimited, preinstalled-library or all-platform verification claims are made. Optional OpenAlex API key and Unpaywall contact email come from environment variables. GB/T 7714-2025 is effective; retained 2015 examples are explicitly legacy and do not establish full 2025 compliance.
+
+The existing research/ packaging is retained in this commit; the default Hermes tap layout and repository-wide QA are addressed in the following compatibility commit.
