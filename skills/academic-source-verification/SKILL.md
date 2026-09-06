@@ -5,6 +5,15 @@ version: 1.1.1
 author: SJF, Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
+required_environment_variables:
+  - name: OPENALEX_API_KEY
+    prompt: "OpenAlex API key（可跳过，使用匿名查询）"
+    help: "在 OpenAlex 官方账户中获取免费 key；不要把 key 写进技能或聊天。"
+    required_for: "Authenticated OpenAlex requests; anonymous queries remain available."
+  - name: UNPAYWALL_EMAIL
+    prompt: "Unpaywall 联系邮箱（可跳过此服务）"
+    help: "填写您自己的真实联系邮箱；跳过时继续其他来源检查。"
+    required_for: "Unpaywall OA lookup only; other source checks remain available."
 metadata:
   hermes:
     tags: [research, citations, open-access, crossref, openalex, semantic-scholar, unpaywall, retraction]

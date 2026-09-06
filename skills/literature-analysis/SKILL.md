@@ -5,6 +5,11 @@ version: 1.2.0
 author: SJF, Hermes Agent
 license: MIT
 platforms: [linux, macos, windows]
+required_environment_variables:
+  - name: OPENALEX_API_KEY
+    prompt: "OpenAlex API key（可跳过，使用匿名查询）"
+    help: "在 OpenAlex 官方账户中获取免费 key；不要把 key 写进技能或聊天。"
+    required_for: "Authenticated OpenAlex requests; anonymous queries remain available."
 metadata:
   hermes:
     tags: [research, literature, similarity, plagiarism, peer-review, fallacy, openalex]
