@@ -143,8 +143,9 @@ doc.close()
 ## Pitfalls
 
 1. **被引数有来源口径**。预印本与正式版本的合并、重复记录及数据库覆盖都会影响计数，标明来源和查询日；不把某库数值称为真实影响或严格下限。
-2. **Crossref 查不到 arXiv 的 data-DOI** `10.48550/arXiv.<id>`（返回 404）。改用 arXiv ID 或期刊 DOI（已发表时）。
-3. **Semantic Scholar 无 key 极易 429**。请求间隔 ≥1.1s，失败退避重试；持续 429 就退回 OpenAlex + Crossref 两个来源，并如实说明。
+2. **Crossref 与 OpenAlex 查 arXiv 的 data-DOI 可能 404/滞后**。`10.48550/arXiv.<id>` 是 DataCite 注册的，Crossref 常返回 404，OpenAlex 偶有收录延迟。遇此情况直接调用 arXiv 官方 API（`http://export.arxiv.org/api/query?id_list=<id>` 或 `search_query=ti:<标题>`）核实标题、摘要、版本历史及撤回（withdrawn）状态。
+3. **经典奠基文献标题易与后继综述撞车**。以简短通用标题（如 "Working Memory"）检索时，极易命中作者多年后的同名回顾篇。核查奠基作须限定出版年份（Crossref `filter=from-pub-date:YYYY-01-01,until-pub-date:YYYY-12-31`）并核对作者序列表。
+4. **Semantic Scholar 无 key 极易 429**。请求间隔 ≥1.1s，失败退避重试；持续 429 就退回 OpenAlex + Crossref 两个来源，并如实说明。
 4. **update-to 非空 ≠ 撤稿**。还须核对更新方向、目标 DOI 与 update.type；更正和表达关注分别记录，不能见 update-to 就报撤稿。
 5. **出版商 PDF 付费墙，脚本下载 403**。OpenAlex 的 `oa_status: "bronze"` 只表示"在出版商网站免费可读"，不代表能脚本下载（Wiley 的 pdfdirect 就是 403）。403 后报告访问受限，不循环重试。
 6. **下载成功 ≠ 内容正确**。必须提取 PDF 首页文字核对标题/作者，防止下到同名错误文件。
